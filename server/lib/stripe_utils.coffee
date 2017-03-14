@@ -1,8 +1,12 @@
 log = require 'winston'
 Payment = require '../models/Payment'
 Promise = require 'bluebird'
+config = require '../../server_config'
+errors = require '../commons/errors'
 
 module.exports =
+  api: require('stripe')(config.stripe.secretKey)
+  
   logError: (user, msg) ->
     log.error "Stripe Utils Error: #{user.get('slug')} (#{user._id}): '#{msg}'"
 
@@ -17,6 +21,8 @@ module.exports =
       statement_descriptor: 'CODECOMBAT.COM'
     stripe.charges.create options, (err, charge) =>
       if err
+        if err?.message.indexOf('declined')
+          return done(new errors.PaymentRequired('Card declined'))
         @logError(user, "Charge create error: #{JSON.stringify(err)}")
         return done(err)
       done(err, charge)
@@ -93,4 +99,4 @@ module.exports =
       user.set('stripe', stripeInfo)
       user.save(done)
 
-module.exports.cancelSubscriptionImmediatelyAsync = Promise.promisify(module.exports.cancelSubscriptionImmediately)
+Promise.promisifyAll(module.exports)

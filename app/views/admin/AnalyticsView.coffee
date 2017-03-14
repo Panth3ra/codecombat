@@ -8,6 +8,8 @@ RootView = require 'views/core/RootView'
 template = require 'templates/admin/analytics'
 utils = require 'core/utils'
 
+# TODO: terminal subscription purchases entered as DRR monthly subs, but should be spread across their timeframe
+
 module.exports = class AnalyticsView extends RootView
   id: 'admin-analytics-view'
   template: template
@@ -15,11 +17,14 @@ module.exports = class AnalyticsView extends RootView
   furthestCourseDayRange: 365
   lineColors: ['red', 'blue', 'green', 'purple', 'goldenrod', 'brown', 'darkcyan']
   minSchoolCount: 20
+  allTimeStartDate: new Date("2014-11-12")
 
   initialize: ->
     @activeClasses = []
     @activeClassGroups = {}
     @activeUsers = []
+    @dayMrrMap = {}
+    @monthMrrMap = {}
     @revenue = []
     @revenueGroups = {}
     @dayEnrollmentsMap = {}
@@ -119,6 +124,7 @@ module.exports = class AnalyticsView extends RootView
       url: '/db/analytics_perday/-/recurring_revenue'
       method: 'POST'
       success: (data) =>
+        # Amounts in cents, 'DRR yearly subs', 'DRR monthly subs'
 
         # Organize data by day, then group
         groupMap = {}
@@ -165,6 +171,21 @@ module.exports = class AnalyticsView extends RootView
               @revenue[i].groups.push(_.reduce(monthlyValues, (s, num) -> s + num))
         for monthlyGroup, dailyGroup of monthlyDailyGroupMap
           @revenueGroups.push monthlyGroup
+
+        # Calculate real monthly revenue instead of 30 days estimation
+        @monthMrrMap = {}
+        for revenue in @revenue
+          month = revenue.day.substring(0, 7)
+          @monthMrrMap[month] ?= {gems: 0, yearly: 0, monthly: 0, total: 0}
+          for group, i in @revenueGroups
+            if group is 'DRR gems'
+              @monthMrrMap[month].gems += revenue.groups[i]
+            else if group is 'DRR monthly subs'
+              @monthMrrMap[month].monthly += revenue.groups[i]
+            else if group is 'DRR yearly subs'
+              @monthMrrMap[month].yearly += revenue.groups[i]
+            if group in ['DRR gems', 'DRR monthly subs', 'DRR yearly subs']
+              @monthMrrMap[month].total += revenue.groups[i]
 
         @updateAllKPIChartData()
         @updateRevenueChartData()
@@ -402,6 +423,17 @@ module.exports = class AnalyticsView extends RootView
             points.splice(0, i)
             break
 
+    # Trim points following days
+    if points.length and days.length and points[points.length - 1].day.localeCompare(days[days.length - 1]) > 0
+      if points[0].day.localeCompare(days[days.length - 1]) > 0
+        points = []
+      else
+        for i in [points.length - 1..0]
+          point = points[i]
+          if point.day.localeCompare(days[days.length - 1]) <= 0
+            points.splice(i)
+            break
+
     # Ensure points for each day
     for day, i in days
       if points.length <= i or points[i]?.day isnt day
@@ -409,6 +441,7 @@ module.exports = class AnalyticsView extends RootView
         points.splice i, 0,
           day: day
           y: prevY
+      points[i].y = 0.0 if isNaN(points[i].y)
       points[i].x = i
 
     points.splice(0, points.length - days.length) if points.length > days.length
@@ -418,6 +451,7 @@ module.exports = class AnalyticsView extends RootView
     visibleWidth = $('.kpi-recent-chart').width()
     d3Utils.createLineChart('.kpi-recent-chart', @kpiRecentChartLines, visibleWidth)
     d3Utils.createLineChart('.kpi-chart', @kpiChartLines, visibleWidth)
+    d3Utils.createLineChart('.kpi-all-time-chart', @kpiAllTimeChartLines, visibleWidth)
     d3Utils.createLineChart('.active-classes-chart-90', @activeClassesChartLines90, visibleWidth)
     d3Utils.createLineChart('.active-classes-chart-365', @activeClassesChartLines365, visibleWidth)
     d3Utils.createLineChart('.classroom-daily-active-users-chart-90', @classroomDailyActiveUsersChartLines90, visibleWidth)
@@ -437,13 +471,107 @@ module.exports = class AnalyticsView extends RootView
     d3Utils.createLineChart('.recurring-monthly-revenue-chart-365', @revenueMonthlyChartLines365Days, visibleWidth)
 
   updateAllKPIChartData: ->
+    # Calculate daily mrr based on previous 30 days, attribute full year sub purchase to purchase day
+    # Do not include gem purchases
+    @dayMrrMap = {}
+    if @revenue?.length > 0
+      daysInMonth = 30
+      currentMrr = 0
+      currentMonthlyValues = []
+      for i in [@revenue.length - 1..0] when i >= 0
+        entry = @revenue[i]
+        monthlySubAmount = entry.groups[@revenueGroups.indexOf('DRR monthly subs')] ? 0
+        yearlySubAmount = entry.groups[@revenueGroups.indexOf('DRR yearly subs')] ? 0
+        currentMonthlyValues.push monthlySubAmount + yearlySubAmount
+        currentMrr += monthlySubAmount + yearlySubAmount
+        currentMrr -= currentMonthlyValues.shift() while currentMonthlyValues.length > daysInMonth
+        @dayMrrMap[entry.day] = currentMrr if currentMonthlyValues.length is daysInMonth
+
     @kpiRecentChartLines = []
     @kpiChartLines = []
+    @kpiAllTimeChartLines = []
     @updateKPIChartData(60, @kpiRecentChartLines)
     @updateKPIChartData(365, @kpiChartLines)
+    @numAllDays = Math.round((new Date() - @allTimeStartDate) / 1000 / 60 / 60 / 24)
+    @updateKPIChartData(@numAllDays, @kpiAllTimeChartLines)
 
   updateKPIChartData: (timeframeDays, chartLines) ->
-    days = d3Utils.createContiguousDays(timeframeDays)
+
+    if timeframeDays is 365
+      # Add previous year too
+      days = d3Utils.createContiguousDays(timeframeDays, true, 365)
+      pointRadius = 0.5
+
+      # Build active classes KPI line
+      if @activeClasses?.length > 0
+        data = []
+        for entry in @activeClasses
+          data.push
+            day: entry.day
+            value: entry.groups[entry.groups.length - 1]
+        data.reverse()
+        points = @createLineChartPoints(days, data)
+        chartLines.push
+          points: points
+          description: 'Monthly Active Classes (last year)'
+          lineColor: 'lightskyblue'
+          strokeWidth: 1
+          min: 0
+          max: _.max(points, 'y').y
+          showYScale: false
+          pointRadius: pointRadius
+
+      # Build recurring revenue KPI line
+      if @revenue?.length > 0
+        data = []
+        for entry in @revenue
+          value = @dayMrrMap[entry.day]
+          data.push
+            day: entry.day
+            value: value / 100 / 1000
+        data.reverse()
+        points = @createLineChartPoints(days, data)
+        chartLines.push
+          points: points
+          description: 'Monthly Recurring Revenue (in thousands) (last year)'
+          lineColor: 'mediumseagreen'
+          strokeWidth: 1
+          min: 0
+          max: _.max(points, 'y').y
+          showYScale: false
+          pointRadius: pointRadius
+
+      # Build campaign MAU KPI line
+      if @activeUsers?.length > 0
+        eventDayDataMap = {}
+        for entry in @activeUsers
+          day = entry.day
+          for event, count of entry.events
+            if event.indexOf('MAU campaign') >= 0
+              eventDayDataMap['MAU campaign'] ?= {}
+              eventDayDataMap['MAU campaign'][day] ?= 0
+              eventDayDataMap['MAU campaign'][day] += count
+
+        campaignData = []
+        for event, entry of eventDayDataMap
+          for day, count of entry
+            campaignData.push day: day, value: count / 1000
+        campaignData.reverse()
+
+        points = @createLineChartPoints(days, campaignData)
+        chartLines.push
+          points: points
+          description: 'Home Monthly Active Users (in thousands) (last year)'
+          lineColor: 'mediumorchid'
+          strokeWidth: 1
+          min: 0
+          max: _.max(points, 'y').y
+          showYScale: false
+          pointRadius: pointRadius
+
+    days = d3Utils.createContiguousDays(timeframeDays, true)
+
+    pointRadius = if timeframeDays > 365 then 1 else if timeframeDays > 90 then 1.5 else 2
 
     # Build active classes KPI line
     if @activeClasses?.length > 0
@@ -462,14 +590,16 @@ module.exports = class AnalyticsView extends RootView
         min: 0
         max: _.max(points, 'y').y
         showYScale: true
+        pointRadius: pointRadius
 
     # Build recurring revenue KPI line
     if @revenue?.length > 0
       data = []
       for entry in @revenue
+        value = @dayMrrMap[entry.day]
         data.push
           day: entry.day
-          value: entry.groups[entry.groups.length - 1] / 100000
+          value: value / 100 / 1000
       data.reverse()
       points = @createLineChartPoints(days, data)
       chartLines.push
@@ -480,6 +610,7 @@ module.exports = class AnalyticsView extends RootView
         min: 0
         max: _.max(points, 'y').y
         showYScale: true
+        pointRadius: pointRadius
 
     # Build campaign MAU KPI line
     if @activeUsers?.length > 0
@@ -507,6 +638,13 @@ module.exports = class AnalyticsView extends RootView
         min: 0
         max: _.max(points, 'y').y
         showYScale: true
+        pointRadius: pointRadius
+
+      # Update previous year maxes if necessary
+      if chartLines.length is 6
+        chartLines[0].max = chartLines[3].max
+        chartLines[1].max = chartLines[4].max
+        chartLines[2].max = chartLines[5].max
 
   updateActiveClassesChartData: ->
     @activeClassesChartLines90 = []

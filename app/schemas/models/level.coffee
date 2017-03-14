@@ -265,7 +265,7 @@ _.extend LevelSchema.properties,
   banner: {type: 'string', format: 'image-file', title: 'Banner'}
   goals: c.array {title: 'Goals', description: 'An array of goals which are visible to the player and can trigger scripts.'}, GoalSchema
   type: c.shortString(title: 'Type', description: 'What type of level this is.', 'enum': ['campaign', 'ladder', 'ladder-tutorial', 'hero', 'hero-ladder', 'hero-coop', 'course', 'course-ladder', 'game-dev', 'web-dev'])
-  kind: c.shortString(title: 'Kind', description: 'Similar to type, but just for our organization.')  # demo, usage, mastery, advanced, practice, challenge
+  kind: c.shortString(title: 'Kind', description: 'Similar to type, but just for our organization.', enum: ['demo', 'usage', 'mastery', 'advanced', 'practice', 'challenge'])
   terrain: c.terrainString
   requiresSubscription: {title: 'Requires Subscription', description: 'Whether this level is available to subscribers only.', type: 'boolean'}
   tasks: c.array {title: 'Tasks', description: 'Tasks to be completed for this level.'}, c.task
@@ -278,7 +278,7 @@ _.extend LevelSchema.properties,
   practice: { type: 'boolean' }
   practiceThresholdMinutes: {type: 'number', description: 'Players with larger playtimes may be directed to a practice level.'}
   primerLanguage: { type: 'string', enum: ['javascript', 'python'], description: 'Programming language taught by this level.' }
-  shareable: { title: 'Shareable', type: ['string', 'boolean'], enum: [false, true, 'project'], description: 'Whether the level is not shareable, shareable, or a sharing-encouraged project level.' }
+  shareable: { title: 'Shareable', type: ['string', 'boolean'], enum: [false, true, 'project'], description: 'Whether the level is not shareable (false), shareable (true), or a sharing-encouraged project level ("project"). Make sure to use "project" for project levels so they show up correctly in the Teacher Dashboard.' }
 
   # Admin flags
   adventurer: { type: 'boolean' }
@@ -324,7 +324,8 @@ _.extend LevelSchema.properties,
   campaignIndex: c.int title: 'Campaign Index', description: 'The 0-based index of this level in its campaign.', format: 'hidden'  # Automatically set by campaign editor.
   scoreTypes: c.array {title: 'Score Types', description: 'What metric to show leaderboards for.', uniqueItems: true},
      c.shortString(title: 'Score Type', 'enum': ['time', 'damage-taken', 'damage-dealt', 'gold-collected', 'difficulty'])  # TODO: good version of LoC; total gear value.
-  concepts: c.array {title: 'Programming Concepts', description: 'Which programming concepts this level covers.', uniqueItems: true}, c.concept
+  concepts: c.array {title: 'Programming Concepts', description: 'Which programming concepts this level covers.', uniqueItems: true, format: 'concepts-list'}, c.concept
+  primaryConcepts: c.array {title: 'Primary Concepts', description: 'The main 1-3 concepts this level focuses on.', uniqueItems: true}, c.concept
   picoCTFProblem: { type: 'string', description: 'Associated picoCTF problem ID, if this is a picoCTF level' }
 
 

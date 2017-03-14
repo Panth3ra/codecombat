@@ -3,6 +3,8 @@ RootView = require 'views/core/RootView'
 CocoCollection = require 'collections/CocoCollection'
 Course = require 'models/Course'
 Level = require 'models/Level'
+utils = require 'core/utils'
+ace = require 'ace'
 
 module.exports = class TeacherCourseSolutionView extends RootView
   id: 'teacher-course-solution-view'
@@ -43,7 +45,11 @@ module.exports = class TeacherCourseSolutionView extends RootView
       comp = heroPlaceholder?.components.filter((x) => x.original.toString() == '524b7b5a7fc0f6d51900000e' ).pop()
       programmableMethod = comp?.config.programmableMethods.plan
       if programmableMethod
-        translatedDefaultCode = _.template(programmableMethod.languages[level.get('primerLanguage') or @language] or programmableMethod.source)(programmableMethod.context)
+        try
+          translatedDefaultCode = _.template(programmableMethod.languages[level.get('primerLanguage') or @language] or programmableMethod.source)(programmableMethod.context)
+        catch e
+          console.error('Broken solution for level:', level.get('name'))
+          continue
         # See if it has <playercode> tags, extract them
         playerCodeTag = utils.extractPlayerCodeTag(translatedDefaultCode)
         finalDefaultCode = if playerCodeTag then playerCodeTag else translatedDefaultCode
@@ -63,3 +69,15 @@ module.exports = class TeacherCourseSolutionView extends RootView
       levels.push({key: level.get('original'), practice: level.get('practice') ? false})
     @levelNumberMap = utils.createLevelNumberMap(levels)
     @render?()
+
+  afterRender: ->
+    super()
+    lang = @language
+    @$el.find('pre>code').each ->
+      els = $(@)
+      c = els.parent()
+      aceEditor = utils.initializeACE c[0], lang
+      aceEditor.setShowInvisibles false
+      aceEditor.setBehavioursEnabled false
+      aceEditor.setAnimatedScroll false
+      aceEditor.$blockScrolling = Infinity

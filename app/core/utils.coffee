@@ -18,28 +18,122 @@ combineAncestralObject = (obj, propertyName) ->
       obj = Object.getPrototypeOf(obj)
   combined
 
+countries = [
+  {country: 'united-states', countryCode: 'US'}
+  {country: 'china', countryCode: 'CN'}
+  {country: 'brazil', countryCode: 'BR'}
+
+  # Loosely ordered by decreasing traffic as measured 2016-09-01 - 2016-11-07
+  {country: 'united-kingdom', countryCode: 'GB'}
+  {country: 'russia', countryCode: 'RU'}
+  {country: 'australia', countryCode: 'AU'}
+  {country: 'canada', countryCode: 'CA'}
+  {country: 'france', countryCode: 'FR'}
+  {country: 'taiwan', countryCode: 'TW'}
+  {country: 'ukraine', countryCode: 'UA'}
+  {country: 'poland', countryCode: 'PL'}
+  {country: 'spain', countryCode: 'ES'}
+  {country: 'germany', countryCode: 'DE'}
+  {country: 'netherlands', countryCode: 'NL'}
+  {country: 'hungary', countryCode: 'HU'}
+  {country: 'japan', countryCode: 'JP'}
+  {country: 'turkey', countryCode: 'TR'}
+  {country: 'south-africa', countryCode: 'ZA'}
+  {country: 'indonesia', countryCode: 'ID'}
+  {country: 'new-zealand', countryCode: 'NZ'}
+  {country: 'finland', countryCode: 'FI'}
+  {country: 'south-korea', countryCode: 'KR'}
+  {country: 'mexico', countryCode: 'MX'}
+  {country: 'vietnam', countryCode: 'VN'}
+  {country: 'singapore', countryCode: 'SG'}
+  {country: 'colombia', countryCode: 'CO'}
+  {country: 'india', countryCode: 'IN'}
+  {country: 'thailand', countryCode: 'TH'}
+  {country: 'belgium', countryCode: 'BE'}
+  {country: 'sweden', countryCode: 'SE'}
+  {country: 'denmark', countryCode: 'DK'}
+  {country: 'czech-republic', countryCode: 'CZ'}
+  {country: 'hong-kong', countryCode: 'HK'}
+  {country: 'italy', countryCode: 'IT'}
+  {country: 'romania', countryCode: 'RO'}
+  {country: 'belarus', countryCode: 'BY'}
+  {country: 'norway', countryCode: 'NO'}
+  {country: 'philippines', countryCode: 'PH'}
+  {country: 'lithuania', countryCode: 'LT'}
+  {country: 'argentina', countryCode: 'AR'}
+  {country: 'malaysia', countryCode: 'MY'}
+  {country: 'pakistan', countryCode: 'PK'}
+  {country: 'serbia', countryCode: 'RS'}
+  {country: 'greece', countryCode: 'GR'}
+  {country: 'israel', countryCode: 'IL'}
+  {country: 'portugal', countryCode: 'PT'}
+  {country: 'slovakia', countryCode: 'SK'}
+  {country: 'ireland', countryCode: 'IE'}
+  {country: 'switzerland', countryCode: 'CH'}
+  {country: 'peru', countryCode: 'PE'}
+  {country: 'bulgaria', countryCode: 'BG'}
+  {country: 'venezuela', countryCode: 'VE'}
+  {country: 'austria', countryCode: 'AT'}
+  {country: 'croatia', countryCode: 'HR'}
+  {country: 'saudia-arabia', countryCode: 'SA'}
+  {country: 'chile', countryCode: 'CL'}
+  {country: 'united-arab-emirates', countryCode: 'AE'}
+  {country: 'kazakhstan', countryCode: 'KZ'}
+  {country: 'estonia', countryCode: 'EE'}
+  {country: 'iran', countryCode: 'IR'}
+  {country: 'egypt', countryCode: 'EG'}
+  {country: 'ecuador', countryCode: 'EC'}
+  {country: 'slovenia', countryCode: 'SI'}
+  {country: 'macedonia', countryCode: 'MK'}
+]
+
 courseIDs =
   INTRODUCTION_TO_COMPUTER_SCIENCE: '560f1a9f22961295f9427742'
-  COMPUTER_SCIENCE_2: '5632661322961295f9428638'
   GAME_DEVELOPMENT_1: '5789587aad86a6efb573701e'
   WEB_DEVELOPMENT_1: '5789587aad86a6efb573701f'
-  COMPUTER_SCIENCE_3: '56462f935afde0c6fd30fc8c'
+  COMPUTER_SCIENCE_2: '5632661322961295f9428638'
   GAME_DEVELOPMENT_2: '57b621e7ad86a6efb5737e64'
   WEB_DEVELOPMENT_2: '5789587aad86a6efb5737020'
+  COMPUTER_SCIENCE_3: '56462f935afde0c6fd30fc8c'
   COMPUTER_SCIENCE_4: '56462f935afde0c6fd30fc8d'
   COMPUTER_SCIENCE_5: '569ed916efa72b0ced971447'
+  COMPUTER_SCIENCE_6: '5817d673e85d1220db624ca4'
 
 orderedCourseIDs = [
   courseIDs.INTRODUCTION_TO_COMPUTER_SCIENCE
-  courseIDs.COMPUTER_SCIENCE_2
   courseIDs.GAME_DEVELOPMENT_1
   courseIDs.WEB_DEVELOPMENT_1
-  courseIDs.COMPUTER_SCIENCE_3
+  courseIDs.COMPUTER_SCIENCE_2
   courseIDs.GAME_DEVELOPMENT_2
   courseIDs.WEB_DEVELOPMENT_2
+  courseIDs.COMPUTER_SCIENCE_3
   courseIDs.COMPUTER_SCIENCE_4
   courseIDs.COMPUTER_SCIENCE_5
+  courseIDs.COMPUTER_SCIENCE_6
 ]
+
+courseAcronyms = {}
+courseAcronyms[courseIDs.INTRODUCTION_TO_COMPUTER_SCIENCE] = 'CS1'
+courseAcronyms[courseIDs.GAME_DEVELOPMENT_1] = 'GD1'
+courseAcronyms[courseIDs.WEB_DEVELOPMENT_1] = 'WD1'
+courseAcronyms[courseIDs.COMPUTER_SCIENCE_2] = 'CS2'
+courseAcronyms[courseIDs.GAME_DEVELOPMENT_2] = 'GD2'
+courseAcronyms[courseIDs.WEB_DEVELOPMENT_2] = 'WD2'
+courseAcronyms[courseIDs.COMPUTER_SCIENCE_3] = 'CS3'
+courseAcronyms[courseIDs.COMPUTER_SCIENCE_4] = 'CS4'
+courseAcronyms[courseIDs.COMPUTER_SCIENCE_5] = 'CS5'
+courseAcronyms[courseIDs.COMPUTER_SCIENCE_6] = 'CS6'
+
+petThangIDs = [
+  '578d320d15e2501f00a585bd',
+  '5744e3683af6bf590cd27371'
+]
+
+premiumContent =
+  premiumHeroesCount: '12'
+  totalHeroesCount: '16'
+  premiumLevelsCount: '330'
+  freeLevelsCount: '100'
 
 normalizeFunc = (func_thing, object) ->
   # func could be a string to a function in this class
@@ -308,8 +402,11 @@ getPrepaidCodeAmount = (price=0, users=0, months=0) ->
   total = price * users * months
   total
 
+formatDollarValue = (dollars) ->
+  '$' + (parseFloat(dollars).toFixed(2))
+
 startsWithVowel = (s) -> s[0] in 'aeiouAEIOU'
-  
+
 filterMarkdownCodeLanguages = (text, language) ->
   return '' unless text
   currentLanguage = language or me.get('aceConfig')?.language or 'python'
@@ -425,7 +522,7 @@ findNextLevel = (levels, currentIndex, needsPractice) ->
     index++ while index < levels.length and (levels[index].practice or levels[index].complete)
   index
 
-needsPractice = (playtime=0, threshold=2) ->
+needsPractice = (playtime=0, threshold=5) ->
   playtime / 60 > threshold
 
 sortCourses = (courses) ->
@@ -541,11 +638,14 @@ module.exports = {
   capitalLanguages
   clone
   combineAncestralObject
+  countries
+  courseAcronyms
   courseIDs
   createLevelNumberMap
   extractPlayerCodeTag
   filterMarkdownCodeLanguages
   findNextLevel
+  formatDollarValue
   functionCreators
   getByPath
   getCourseBundlePrice
@@ -576,4 +676,6 @@ module.exports = {
   stripIndentation
   usStateCodes
   userAgent
+  petThangIDs
+  premiumContent
 }

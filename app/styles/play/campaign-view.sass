@@ -59,6 +59,99 @@ $gameControlMargin: 30px
 
   .map
     position: relative
+    
+    #brain-pop-done-banner-wrapper
+      position: absolute
+      top: 30%
+      width: 100%
+      #brain-pop-done-banner
+        background: url("/images/pages/base/modal_background.png")
+        background-size: 100% 100%
+        width: 400px
+        margin: 0 auto
+        padding: 20px 40px
+        text-align: center
+
+    // Minecraft modal
+    #cube-level-container
+      position: absolute
+      left: 30%
+      top: 15%
+      background-color: rgb(80, 130, 200)
+
+      #spinning-cube
+        position: absolute
+        top: -32px
+        width: 32px
+        height: 32px
+        transform: translateX(-50%) scaleY(1.33)
+        left: 50%
+        perspective: 800px
+        perspective-origin: 50% 100px
+        filter: drop-shadow(0px 0px 4px purple) drop-shadow(0px 0px 4px purple) drop-shadow(0px 0px 4px purple)
+
+        .cube
+          position: relative
+          width: 32px
+          transform-style: preserve-3d
+          animation: spin 5s infinite linear
+
+          +keyframes(spin)
+            from
+              -moz-transform: rotateX(180deg) rotateY(0deg)
+              -o-transform: rotateX(180deg) rotateY(0deg)
+              -webkit-transform: rotateX(180deg) rotateY(0deg)
+              transform: rotateX(180deg) rotateY(0deg)
+            to
+              -moz-transform: rotateX(540deg) rotateY(360deg)
+              -o-transform: rotateX(540deg) rotateY(360deg)
+              -webkit-transform: rotateX(540deg) rotateY(360deg)
+              transform: rotateX(540deg) rotateY(360deg)
+
+          div
+            width: 32px
+            height: 32px
+            position: absolute
+            background-size: 100% 100%
+            color: white
+
+          .front, .back, .left, .right
+            background-image: url('/images/minecraft/grass_side.png')
+          .top
+            background-image: url('/images/minecraft/grass_top.png')
+          .bottom
+            background-image: url('/images/minecraft/dirt.png')
+          .front
+            -moz-transform: translateY(-16px) rotateY(0deg) translateZ(-16px) rotateX(180deg)
+            -o-transform: translateY(-16px) rotateY(0deg) translateZ(-16px) rotateX(180deg)
+            -webkit-transform: translateY(-16px) rotateY(0deg) translateZ(-16px) rotateX(180deg)
+            transform: translateY(-16px) rotateY(0deg) translateZ(-16px) rotateX(180deg)
+          .back
+            -moz-transform: translateY(-16px) rotateX(180deg) translateZ(-16px)
+            -o-transform: translateY(-16px) rotateX(180deg) translateZ(-16px)
+            -webkit-transform: translateY(-16px) rotateX(180deg) translateZ(-16px)
+            transform: translateY(-16px) rotateX(180deg) translateZ(-16px)
+          .left
+            -moz-transform: translateY(-16px) rotateY(-89.9deg) translateZ(-16px) rotateX(180deg)
+            -o-transform: translateY(-16px) rotateY(-89.9deg) translateZ(-16px) rotateX(180deg)
+            -webkit-transform: translateY(-16px) rotateY(-89.9deg) translateZ(-16px) rotateX(180deg)
+            transform: translateY(-16px) rotateY(-89.9deg) translateZ(-16px) rotateX(180deg)
+          .right
+            -moz-transform: translateY(-16px) rotateY(89.9deg) translateZ(-16px) rotateX(180deg)
+            -o-transform: translateY(-16px) rotateY(89.9deg) translateZ(-16px) rotateX(180deg)
+            -webkit-transform: translateY(-16px) rotateY(89.9deg) translateZ(-16px) rotateX(180deg)
+            transform: translateY(-16px) rotateY(89.9deg) translateZ(-16px) rotateX(180deg)
+          .top
+            -moz-transform: translateY(-16px) rotateX(89.9deg) translateZ(-16px)
+            -o-transform: translateY(-16px) rotateX(89.9deg) translateZ(-16px)
+            -webkit-transform: translateY(-16px) rotateX(89.9deg) translateZ(-16px)
+            transform: translateY(-16px) rotateX(89.9deg) translateZ(-16px)
+          .bottom
+            -moz-transform: translateY(-16px) rotateX(-89.9deg) translateZ(-16px)
+            -o-transform: translateY(-16px) rotateX(-89.9deg) translateZ(-16px)
+            -webkit-transform: translateY(-16px) rotateX(-89.9deg) translateZ(-16px)
+            transform: translateY(-16px) rotateX(-89.9deg) translateZ(-16px)
+
 
     .map-background
       width: 100%
@@ -80,6 +173,16 @@ $gameControlMargin: 30px
       margin-bottom: -$levelDotHeight / 3 + $levelDotZ
       border: 2px groove white
       @include transition(margin-bottom 0.5s ease)
+      cursor: pointer
+
+      .treasure-chest
+        position: absolute
+        left: 50%
+        width: 150%
+        transform: translateX(-50%) translateX(50%) translateY(-130%) scaleY(1.33) scale(0.75)
+        cursor: pointer
+        z-index: -1
+        filter: drop-shadow(0px 0px 4px gold)
 
       &.disabled, &.locked
         //background-image: url(/images/pages/game-menu/lock.png)
@@ -91,6 +194,10 @@ $gameControlMargin: 30px
         height: $levelDotHeight * 0.67
         margin-left: -0.5 * 0.67 * $levelDotWidth
         margin-bottom: -$levelDotHeight / 3 * 0.67 + $levelDotZ / 2
+
+        .treasure-chest
+          transform: translateX(-50%) translateY(-200%) scaleY(1.33) scale(0.95)
+
 
       &.started, &.next
         border: 3px solid lightgreen
@@ -122,7 +229,6 @@ $gameControlMargin: 30px
         bottom: 38%
         width: 170%
         left: -35%
-        pointer-events: none
 
       img.star
         width: 100%
@@ -130,7 +236,7 @@ $gameControlMargin: 30px
         position: absolute
         pointer-events: none
 
-      .level-acronym
+      .level-acronym, .level-kind
         position: absolute
         pointer-events: none
         left: 0
@@ -142,6 +248,25 @@ $gameControlMargin: 30px
         font-size: 0.8vw
         text-shadow: 0px 1px 0px white
 
+      .level-kind
+        bottom: auto
+        top: 100%
+        color: white
+        text-shadow: 0px 1px 0px black, 0px -1px 0px black, -1px 0px 0px black, 1px 0px 0px black
+
+        &.demo
+          color: rgb(128, 255, 128)
+        &.usage
+          color: rgb(128, 128, 255)
+        &.mastery
+          color: rgb(255, 128, 128)
+        &.practice
+          color: rgb(128, 128, 255)
+        &.advanced
+          color: rgb(128, 255, 255)
+        &.challenge
+          color: rgb(255, 255, 128)
+
       img.hero-portrait, img.item-portrait
         width: 120%
         height: auto
@@ -149,6 +274,20 @@ $gameControlMargin: 30px
         left: 75%
         margin-left: 0
         margin-bottom: 0
+
+    img.premium-hero-banner
+      position: absolute
+      height: 250%
+      transform: translate(-50%, -100%) translateX(-20%) translateY(-10%) scaleY(1.33)
+      filter: drop-shadow(0px 0px 10px black)
+      z-index: 3
+
+    img.pet-banner
+      position: absolute
+      height: 250%
+      transform: translate(-50%, -80%) translateX(-20%) translateY(-10%) scaleY(1.33) scale(0.625)
+      filter: drop-shadow(0px 0px 10px black)
+      z-index: 3
 
     img.hero-portrait, img.item-portrait
       position: absolute
@@ -309,12 +448,11 @@ $gameControlMargin: 30px
         text-decoration: none
 
   .next-level-line
-    transform-origin: 0 100%
     height: 8px
     position: absolute
 
     .line
-      width: calc(100% - 12px - 10px)
+      width: calc(100% - 24px)
       float: left
       margin-top: 2px
       margin-bottom: 2px
@@ -323,12 +461,13 @@ $gameControlMargin: 30px
       box-shadow: 0px 0px 4px black
 
     .point
-      width: 12px
-      float: left
-      margin-top: -4px
-      border-top: 8px solid transparent
-      border-bottom: 8px solid transparent
-      border-left: 12px solid lighten(#F1EAC0, 10%)
+      width: 24px
+      height: 24px
+      float: right
+      margin-top: -8px
+      border-top: 12px solid transparent
+      border-bottom: 12px solid transparent
+      border-left: 24px solid lighten(#F1EAC0, 10%)
 
   .game-controls
     position: absolute
@@ -546,7 +685,6 @@ $gameControlMargin: 30px
       $campaignWidth: 317px
       $campaignHeight: 634px
       $campaignHoverScale: 1.2
-      width: 8 * $campaignWidth
       height: $campaignHeight * $campaignHoverScale
       flex-wrap: nowrap
       display: flex
@@ -588,7 +726,7 @@ $gameControlMargin: 30px
 
         .campaign-label
           position: absolute
-          top: 55%
+          top: 45%
           width: 100%
           text-align: center
 
@@ -709,6 +847,15 @@ $gameControlMargin: 30px
     img
       height: 30px
 
+  .code-ninjas-logo
+    top: calc(1% + 5px)
+    left: calc(1% + 200px)
+    
+  .codeplay-logo
+    top: calc(1% + 5px)
+    left: calc(1% + 5px)
+    height: 100px
+
   .ad-container
     width: 100%
     height: 90px
@@ -718,6 +865,13 @@ $gameControlMargin: 30px
     position: absolute
     height: 100%
     width: 100%
+    
+  #codeplay-ad
+    position: absolute
+    right: 10px
+    top: 60px
+    height: calc(100% - 160px)
+    z-index: 2
 
 body.ipad #campaign-view
   // iPad only supports up to Kithgard Gates for now.

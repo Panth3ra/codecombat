@@ -1,10 +1,12 @@
+fs = require 'fs'
+path = require 'path'
 config = {}
 
 config.unittest = global.testing
 config.proxy = process.env.COCO_PROXY
 
-config.chinaDomain = "cn.codecombat.com;ccombat.cn"
-config.brazilDomain = "br.codecombat.com"
+config.chinaDomain = "cn.codecombat.com;ccombat.cn;contributors.codecombat.com"
+config.brazilDomain = "br.codecombat.com;contributors.codecombat.com"
 config.port = process.env.COCO_PORT or process.env.COCO_NODE_PORT or process.env.PORT  or 3000
 config.ssl_port = process.env.COCO_SSL_PORT or process.env.COCO_SSL_NODE_PORT or 3443
 config.cloudflare =
@@ -64,8 +66,8 @@ config.mail =
   supportPrimary: process.env.COCO_MAIL_SUPPORT_PRIMARY or ''
   supportPremium: process.env.COCO_MAIL_SUPPORT_PREMIUM or ''
   supportSchools: process.env.COCO_MAIL_SUPPORT_SCHOOLS or ''
-  mailchimpAPIKey: process.env.COCO_MAILCHIMP_API_KEY or ''
-  mailchimpWebhook: process.env.COCO_MAILCHIMP_WEBHOOK or '/mail/webhook'
+  mailChimpAPIKey: process.env.COCO_MAILCHIMP_API_KEY or ''
+  mailChimpWebhook: process.env.COCO_MAILCHIMP_WEBHOOK or '/mail/webhook'
   sendwithusAPIKey: process.env.COCO_SENDWITHUS_API_KEY or ''
   stackleadAPIKey: process.env.COCO_STACKLEAD_API_KEY or ''
   delightedAPIKey: process.env.COCO_DELIGHTED_API_KEY or ''
@@ -121,5 +123,17 @@ if process.env.COCO_STATSD_HOST
     host: process.env.COCO_STATSD_HOST
     port: process.env.COCO_STATSD_PORT or 8125
     prefix: process.env.COCO_STATSD_PREFIX or ''
+    
+config.snowplow =
+  user: process.env.COCO_SNOWPLOW_USER or 'user'
+  database: process.env.COCO_SNOWPLOW_DATABASE or 'database'
+  password: process.env.COCO_SNOWPLOW_PASSWORD or 'password'
+  host: process.env.COCO_SNOWPLOW_HOST or 'host'
+  port: process.env.COCO_SNOWPLOW_PORT or 1
+
+config.buildInfo = { sha: 'dev' }
+
+if fs.existsSync path.join(__dirname, '.build_info.json')
+  config.buildInfo = JSON.parse fs.readFileSync path.join(__dirname, '.build_info.json'), 'utf8'
 
 module.exports = config

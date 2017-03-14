@@ -73,7 +73,7 @@ describe 'POST /db/level/:handle', ->
     expect(level.get('index')).toBeDefined()
     done()
 
-  it 'enforces permissions', ->
+  it 'enforces permissions', utils.wrap (done) ->
     yield utils.clearModels([Level, User])
     user = yield utils.initUser()
     yield utils.loginUser(user)
@@ -86,6 +86,31 @@ describe 'POST /db/level/:handle', ->
     expect(res.statusCode).toBe(403)
     level = yield Level.findById(level.id)
     expect(level.get('description')).toBe('Original desc')
+    done()
+    
+  it 'updates campaigns that contain that level', utils.wrap (done) ->
+    admin = yield utils.initAdmin()
+    yield utils.loginUser(admin)
+    
+    level = yield utils.makeLevel({name: 'First name'})
+    campaign = yield utils.makeCampaign({}, {levels: [level]})
+
+    otherLevel = yield utils.makeLevel()
+    unrelatedCampaign = yield utils.makeCampaign({}, {levels: [otherLevel]})
+
+    url = getURL("/db/level/#{level.id}")
+    levelJSON = level.toObject()
+    levelJSON.name = 'New name'
+    spyOn(Campaign, 'update').and.callThrough()
+    [res, body] = yield request.postAsync({url: url, json: levelJSON})
+    expect(Campaign.update.calls.count()).toBe(1)
+    yield Campaign.update.calls.mostRecent().returnValue # wait until update is finished
+    campaign = yield Campaign.findById(campaign.id)
+    expect(_.size(campaign.get('levels'))).toBe(1)
+    expect(campaign.get('levels')[level.get('original')].name).toBe('New name')
+    unrelatedCampaign = yield Campaign.findById(unrelatedCampaign.id)
+    expect(_.size(unrelatedCampaign.get('levels'))).toBe(1)
+    expect(unrelatedCampaign.get('levels')[level.get('original')]).not.toBe('New name')
     done()
 
 describe 'GET /db/level/:handle/session', ->
@@ -105,7 +130,14 @@ describe 'GET /db/level/:handle/session', ->
       @primerLevel = yield utils.makeLevel({type: 'course', primerLanguage: 'javascript'})
       @campaign = yield utils.makeCampaign({}, {levels: [@level, @primerLevel]})
       @course = yield utils.makeCourse({free: true, releasePhase: 'released'}, {campaign: @campaign})
-      @student = yield utils.initUser({role: 'student'})
+      @student = yield utils.initUser({
+        role: 'student'
+        coursePrepaid: {
+          _id: {}
+          startDate: moment().subtract(1, 'month').toISOString()
+          endDate: moment().add(1, 'month').toISOString()
+        }
+      })
       @members = [@student]
       @teacher = yield utils.initUser({role: 'teacher'})
       yield utils.loginUser(@teacher)
@@ -190,20 +222,20 @@ describe 'GET /db/level/:handle/session', ->
         done()
       
       it 'returns 402 if the user is not enrolled', utils.wrap (done) ->
+        @student.set({
+          coursePrepaid: {
+            _id: {}
+            startDate: moment().subtract(2, 'month').toISOString()
+            endDate: moment().subtract(1, 'month').toISOString()
+          }
+        })
+        yield @student.save()
         [res, body] = yield request.getAsync({ uri: @url, json: true })
         expect(res.statusCode).toBe(402)
         expect(res.body.message).toBe('You must be enrolled to access this content')
         done()
         
       it 'creates the session if the user is enrolled', utils.wrap (done) ->
-        @student.set({
-          coursePrepaid: {
-            _id: {}
-            startDate: moment().subtract(1, 'month').toISOString()
-            endDate: moment().add(1, 'month').toISOString()
-          }
-        })
-        @student.save()
         [res, body] = yield request.getAsync({ uri: @url, json: true })
         expect(res.statusCode).toBe(201)
         done()
@@ -216,7 +248,7 @@ describe 'GET /db/level/:handle/session', ->
             endDate: moment().subtract(1, 'month').toISOString()
           }
         })
-        @student.save()
+        yield @student.save()
         [res, body] = yield request.getAsync({ uri: @url, json: true })
         expect(res.statusCode).toBe(402)
         expect(res.body.message).toBe('You must be enrolled to access this content')
@@ -297,7 +329,7 @@ describe 'POST /db/level/:handle/patch', ->
     changed.i18n = {'de': {name:'German translation #1'}}
     delta = jsondiffpatch.diff(original, changed)
     
-    json = { 
+    json = {
       delta: delta
       target: {
         collection: 'level'

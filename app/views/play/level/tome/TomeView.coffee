@@ -44,6 +44,11 @@ module.exports = class TomeView extends CocoView
   events:
     'click': 'onClick'
 
+  constructor: (options) ->
+    super options
+    unless options.god or options.level.get('type') is 'web-dev'
+      console.error "TomeView created with no God!"
+
   afterRender: ->
     super()
     @worker = @createWorker()
@@ -124,6 +129,7 @@ module.exports = class TomeView extends CocoView
           level: @options.level
           god: @options.god
           courseID: @options.courseID
+          courseInstanceID: @options.courseInstanceID
 
     for thangID, spellKeys of @thangSpells
       thang = @fakeProgrammableThang ? world.getThangByID thangID
@@ -193,10 +199,7 @@ module.exports = class TomeView extends CocoView
     @spellView?.setThang thang
 
   updateSpellPalette: (thang, spell) ->
-    return unless thang and @spellPaletteView?.thang isnt thang and (thang.programmableProperties or thang.apiProperties or thang.programmableHTMLProperties)
-    useHero = /hero/.test(spell.getSource()) or not /(self[\.\:]|this\.|\@)/.test(spell.getSource())
-    @spellPaletteView = @insertSubView new SpellPaletteView { thang, @supermodel, programmable: spell?.canRead(), language: spell?.language ? @options.session.get('codeLanguage'), session: @options.session, level: @options.level, courseID: @options.courseID, courseInstanceID: @options.courseInstanceID, useHero }
-    @spellPaletteView.toggleControls {}, spell.view.controlsEnabled if spell?.view   # TODO: know when palette should have been disabled but didn't exist
+    @options.playLevelView.updateSpellPalette thang, spell
 
   spellFor: (thang, spellName) ->
     return null unless thang?.isProgrammable
@@ -211,7 +214,7 @@ module.exports = class TomeView extends CocoView
 
   reloadAllCode: ->
     if utils.getQueryVariable 'dev'
-      @spellPaletteView.destroy()
+      @options.playLevelView.spellPaletteView.destroy()
       @updateSpellPalette @spellView.thang, @spellView.spell
     spell.view.reloadCode false for spellKey, spell of @spells when spell.view and (spell.team is me.team or (spell.team in ['common', 'neutral', null]))
     @cast false, false

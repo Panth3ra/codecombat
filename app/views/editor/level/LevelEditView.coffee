@@ -1,8 +1,10 @@
 RootView = require 'views/core/RootView'
-template = require 'templates/editor/level/edit'
+template = require 'templates/editor/level/level-edit-view'
 Level = require 'models/Level'
 LevelSystem = require 'models/LevelSystem'
 LevelComponent = require 'models/LevelComponent'
+LevelSystems = require 'collections/LevelSystems'
+LevelComponents = require 'collections/LevelComponents'
 World = require 'lib/world/world'
 DocumentFiles = require 'collections/DocumentFiles'
 LevelLoader = require 'lib/LevelLoader'
@@ -25,6 +27,8 @@ SaveLevelModal = require './modals/SaveLevelModal'
 ArtisanGuideModal = require './modals/ArtisanGuideModal'
 ForkModal = require 'views/editor/ForkModal'
 SaveVersionModal = require 'views/editor/modal/SaveVersionModal'
+SaveBranchModal = require 'views/editor/level/modals/SaveBranchModal'
+LoadBranchModal = require 'views/editor/level/modals/LoadBranchModal'
 PatchesView = require 'views/editor/PatchesView'
 RelatedAchievementsView = require 'views/editor/level/RelatedAchievementsView'
 VersionHistoryView = require './modals/LevelVersionsModal'
@@ -44,6 +48,8 @@ require 'vendor/aether-coffeescript'
 require 'vendor/aether-lua'
 require 'vendor/aether-java'
 require 'vendor/aether-html'
+
+require 'game-libraries'
 
 module.exports = class LevelEditView extends RootView
   id: 'editor-level-view'
@@ -70,13 +76,15 @@ module.exports = class LevelEditView extends RootView
     'click #level-watch-button': 'toggleWatchLevel'
     'click li:not(.disabled) > #pop-level-i18n-button': 'onPopulateI18N'
     'click a[href="#editor-level-documentation"]': 'onClickDocumentationTab'
+    'click #save-branch': 'onClickSaveBranch'
+    'click #load-branch': 'onClickLoadBranch'
     'mouseup .nav-tabs > li a': 'toggleTab'
 
   constructor: (options, @levelID) ->
     super options
     @supermodel.shouldSaveBackups = (model) ->
       model.constructor.className in ['Level', 'LevelComponent', 'LevelSystem', 'ThangType']
-    @levelLoader = new LevelLoader supermodel: @supermodel, levelID: @levelID, headless: true, sessionless: true
+    @levelLoader = new LevelLoader supermodel: @supermodel, levelID: @levelID, headless: true, sessionless: true, loadArticles: true
     @level = @levelLoader.level
     @files = new DocumentFiles(@levelLoader.level)
     @supermodel.loadCollection(@files, 'file_names')
@@ -139,7 +147,7 @@ module.exports = class LevelEditView extends RootView
     Backbone.Mediator.publish 'editor:level-loaded', level: @level
     @showReadOnly() if me.get('anonymous')
     @patchesView = @insertSubView(new PatchesView(@level), @$el.find('.patches-view'))
-    @listenTo @patchesView, 'accepted-patch', -> location.reload()
+    @listenTo @patchesView, 'accepted-patch', -> location.reload() unless key.shift  # Reload to make sure changes propagate, unless secret shift shortcut
     @$el.find('#level-watch-button').find('> span').toggleClass('secret') if @level.watching()
 
   onPlayLevelTeamSelect: (e) ->
@@ -227,7 +235,7 @@ module.exports = class LevelEditView extends RootView
     button.find('> span').toggleClass('secret')
 
   onPopulateI18N: ->
-    @level.populateI18N()
+    totalChanges = @level.populateI18N()
 
     levelComponentMap = _(currentView.supermodel.getModels(LevelComponent))
       .map((c) -> [c.get('original'), c])
@@ -239,10 +247,25 @@ module.exports = class LevelEditView extends RootView
         component = levelComponentMap[thangComponent.original]
         configSchema = component.get('configSchema')
         path = "/thangs/#{thangIndex}/components/#{thangComponentIndex}/config"
-        @level.populateI18N(thangComponent.config, configSchema, path)
+        totalChanges += @level.populateI18N(thangComponent.config, configSchema, path)
 
-    f = -> document.location.reload()
-    setTimeout(f, 2000)
+    if totalChanges
+      f = -> document.location.reload()
+      setTimeout(f, 500)
+    else
+      noty timeout: 2000, text: 'No changes.', type: 'information', layout: 'topRight'
+
+  onClickSaveBranch: ->
+    components = new LevelComponents(@supermodel.getModels(LevelComponent))
+    systems = new LevelSystems(@supermodel.getModels(LevelSystem))
+    @openModalView new SaveBranchModal({components, systems})
+    Backbone.Mediator.publish 'editor:view-switched', {}
+
+  onClickLoadBranch: ->
+    components = new LevelComponents(@supermodel.getModels(LevelComponent))
+    systems = new LevelSystems(@supermodel.getModels(LevelSystem))
+    @openModalView new LoadBranchModal({components, systems})
+    Backbone.Mediator.publish 'editor:view-switched', {}
 
   toggleTab: (e) ->
     @renderScrollbar()
